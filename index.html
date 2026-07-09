@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff5da2">
+<title>Meghatri's Guess the Flag!</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.svg">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Comic Sans MS', 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #ffe259, #ffa751, #ff6fa5, #6fc3ff);
+    background-size: 300% 300%;
+    animation: bgshift 12s ease infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  @keyframes bgshift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .card {
+    background: #fff;
+    border-radius: 32px;
+    box-shadow: 0 12px 0 rgba(0,0,0,0.15);
+    padding: 28px 24px 32px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+  h1 {
+    margin: 0 0 2px;
+    font-size: 1.9em;
+    color: #ff5da2;
+    text-shadow: 2px 2px 0 #ffd166;
+  }
+  .subtitle {
+    margin: 0 0 14px;
+    font-size: 1.05em;
+    color: #a25b00;
+    font-weight: bold;
+  }
+  .status {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 16px;
+    background: #fff3cd;
+    border-radius: 999px;
+    padding: 6px 14px;
+    display: inline-block;
+  }
+  .flag-wrap {
+    margin: 10px 0 22px;
+    display: flex;
+    justify-content: center;
+  }
+  .flag-img {
+    width: 220px;
+    max-width: 80%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15), 0 10px 18px rgba(0,0,0,0.25);
+    border: 4px solid #fff;
+    outline: 3px solid #ffd166;
+  }
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .opt {
+    font-size: 1.05em;
+    font-weight: bold;
+    padding: 18px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #6fc3ff;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #3f9bdb;
+    transition: transform 0.08s ease;
+  }
+  .opt:active { transform: translateY(4px); box-shadow: 0 2px 0 #3f9bdb; }
+  .opt:disabled { cursor: default; }
+  .opt.correct {
+    background: #6bd490;
+    box-shadow: 0 6px 0 #3a9e5f;
+  }
+  .opt.wrong {
+    background: #ff6b6b;
+    box-shadow: 0 6px 0 #c74444;
+  }
+  .opt.dim {
+    opacity: 0.55;
+  }
+  #nextBtn, #playAgainBtn {
+    font-size: 1.15em;
+    font-weight: bold;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 999px;
+    background: #ffd166;
+    color: #7a4b00;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #d19a2c;
+    transition: transform 0.08s ease;
+  }
+  #nextBtn:active, #playAgainBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #d19a2c; }
+  .hidden { display: none; }
+  .endscreen h2 {
+    font-size: 2.1em;
+    color: #ff5da2;
+    margin: 0 0 6px;
+  }
+  .endscreen .big { font-size: 3.5em; margin: 10px 0; }
+  .endscreen p { font-size: 1.2em; color: #555; }
+  .stars { font-size: 1.8em; margin-bottom: 6px; }
+  .sound-toggles {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .sound-btn {
+    font-size: 1.3em;
+    background: #fff3cd;
+    border: none;
+    border-radius: 999px;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #d19a2c;
+  }
+  .sound-btn.off { opacity: 0.4; }
+  .card { position: relative; }
+  .startscreen {
+    text-align: center;
+  }
+  .startscreen .big-emoji { font-size: 4em; margin: 6px 0 10px; }
+  .startscreen p { font-size: 1.1em; color: #555; margin-bottom: 22px; }
+  #startBtn {
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 16px 36px;
+    border: none;
+    border-radius: 999px;
+    background: #6bd490;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #3a9e5f;
+  }
+  #startBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #3a9e5f; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="sound-toggles">
+    <button class="sound-btn" id="musicToggle" title="Music on/off">🎵</button>
+    <button class="sound-btn" id="voiceToggle" title="Voice on/off">🔊</button>
+  </div>
+  <h1>🚩 Guess the Flag! 🚩</h1>
+  <div class="subtitle">✨ Meghatri's Flag Adventure ✨</div>
+
+  <div id="startscreen" class="startscreen">
+    <div class="big-emoji">🌍🎈</div>
+    <p>Hi Meghatri! Ready to play?</p>
+    <button id="startBtn">Let's Play! ▶️</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="status" id="status">Question 1 of 10 · Score: 0</div>
+    <div class="flag-wrap">
+      <img class="flag-img" id="flagImg" src="" alt="flag">
+    </div>
+    <div class="options" id="options"></div>
+    <button id="nextBtn" class="hidden">Next ➡️</button>
+  </div>
+
+  <div id="endscreen" class="endscreen hidden">
+    <div class="stars">🌟🌟🌟</div>
+    <h2 id="endTitle">All Done, Meghatri!</h2>
+    <div class="big" id="finalScore">0 / 10</div>
+    <p id="encourageMsg"></p>
+    <button id="playAgainBtn">Play Again 🔄</button>
+  </div>
+</div>
+
+<script>
+const flags = [
+  {name:"Bangladesh", code:"bd"},
+  {name:"India", code:"in"},
+  {name:"Pakistan", code:"pk"},
+  {name:"Nepal", code:"np"},
+  {name:"Bhutan", code:"bt"},
+  {name:"Sri Lanka", code:"lk"},
+  {name:"Myanmar", code:"mm"},
+  {name:"Maldives", code:"mv"},
+  {name:"Afghanistan", code:"af"},
+  {name:"China", code:"cn"},
+  {name:"United Arab Emirates", code:"ae"},
+  {name:"Kuwait", code:"kw"},
+  {name:"Oman", code:"om"},
+  {name:"Bahrain", code:"bh"},
+  {name:"Malaysia", code:"my"},
+  {name:"Singapore", code:"sg"},
+  {name:"United Kingdom", code:"gb"},
+  {name:"Italy", code:"it"},
+  {name:"Argentina", code:"ar"},
+  {name:"Algeria", code:"dz"},
+  {name:"Australia", code:"au"},
+  {name:"Austria", code:"at"},
+  {name:"Belgium", code:"be"},
+  {name:"Bosnia and Herzegovina", code:"ba"},
+  {name:"Brazil", code:"br"},
+  {name:"Canada", code:"ca"},
+  {name:"Cape Verde", code:"cv"},
+  {name:"Colombia", code:"co"},
+  {name:"Croatia", code:"hr"},
+  {name:"Curaçao", code:"cw"},
+  {name:"Czechia", code:"cz"},
+  {name:"DR Congo", code:"cd"},
+  {name:"Ecuador", code:"ec"},
+  {name:"Egypt", code:"eg"},
+  {name:"England", code:"gb-eng"},
+  {name:"France", code:"fr"},
+  {name:"Germany", code:"de"},
+  {name:"Ghana", code:"gh"},
+  {name:"Haiti", code:"ht"},
+  {name:"Iran", code:"ir"},
+  {name:"Iraq", code:"iq"},
+  {name:"Ivory Coast", code:"ci"},
+  {name:"Japan", code:"jp"},
+  {name:"Jordan", code:"jo"},
+  {name:"Mexico", code:"mx"},
+  {name:"Morocco", code:"ma"},
+  {name:"Netherlands", code:"nl"},
+  {name:"New Zealand", code:"nz"},
+  {name:"Norway", code:"no"},
+  {name:"Panama", code:"pa"},
+  {name:"Paraguay", code:"py"},
+  {name:"Portugal", code:"pt"},
+  {name:"Qatar", code:"qa"},
+  {name:"Saudi Arabia", code:"sa"},
+  {name:"Scotland", code:"gb-sct"},
+  {name:"Senegal", code:"sn"},
+  {name:"South Africa", code:"za"},
+  {name:"South Korea", code:"kr"},
+  {name:"Spain", code:"es"},
+  {name:"Sweden", code:"se"},
+  {name:"Switzerland", code:"ch"},
+  {name:"Tunisia", code:"tn"},
+  {name:"Türkiye", code:"tr"},
+  {name:"United States", code:"us"},
+  {name:"Uruguay", code:"uy"},
+  {name:"Uzbekistan", code:"uz"}
+];
+
+const PLAYER_NAME = "Meghatri";
+const TOTAL_QUESTIONS = 10;
+
+let roundQuestions = [];
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+
+const statusEl = document.getElementById('status');
+const flagImg = document.getElementById('flagImg');
+const optionsEl = document.getElementById('options');
+const nextBtn = document.getElementById('nextBtn');
+const gameEl = document.getElementById('game');
+const startscreenEl = document.getElementById('startscreen');
+const startBtn = document.getElementById('startBtn');
+const endscreenEl = document.getElementById('endscreen');
+const finalScoreEl = document.getElementById('finalScore');
+const encourageMsgEl = document.getElementById('encourageMsg');
+const endTitleEl = document.getElementById('endTitle');
+const playAgainBtn = document.getElementById('playAgainBtn');
+const musicToggle = document.getElementById('musicToggle');
+const voiceToggle = document.getElementById('voiceToggle');
+
+/* ---------- Sound: mild background music (Web Audio API, no files needed) ---------- */
+let audioCtx = null;
+let musicOn = true;
+let voiceOn = true;
+let musicTimer = null;
+
+const MELODY = [523.25, 659.25, 783.99, 659.25, 523.25, 587.33, 523.25, 440.00];
+
+function ensureAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playTone(freq, startTime, duration, gainPeak) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(gainPeak, startTime + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+
+function scheduleMusicLoop() {
+  if (!musicOn || !audioCtx) return;
+  const noteDur = 0.55;
+  let t = audioCtx.currentTime + 0.05;
+  MELODY.forEach(freq => {
+    playTone(freq, t, noteDur, 0.045);
+    t += noteDur;
+  });
+  const loopLength = MELODY.length * noteDur * 1000;
+  musicTimer = setTimeout(scheduleMusicLoop, loopLength);
+}
+
+function startMusic() {
+  ensureAudioCtx();
+  if (musicTimer) clearTimeout(musicTimer);
+  if (musicOn) scheduleMusicLoop();
+}
+
+function stopMusic() {
+  if (musicTimer) clearTimeout(musicTimer);
+  musicTimer = null;
+}
+
+musicToggle.addEventListener('click', () => {
+  musicOn = !musicOn;
+  musicToggle.classList.toggle('off', !musicOn);
+  if (musicOn) startMusic();
+  else stopMusic();
+});
+
+/* ---------- Voice: speak instructions with SpeechSynthesis ---------- */
+function speak(text) {
+  if (!voiceOn || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.9;
+  utter.pitch = 1.2;
+  utter.volume = 1;
+  window.speechSynthesis.speak(utter);
+}
+
+voiceToggle.addEventListener('click', () => {
+  voiceOn = !voiceOn;
+  voiceToggle.classList.toggle('off', !voiceOn);
+  if (!voiceOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+});
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function flagUrl(code) {
+  return `https://flagcdn.com/w320/${code}.png`;
+}
+
+function startRound() {
+  roundQuestions = shuffle(flags).slice(0, TOTAL_QUESTIONS);
+  currentIndex = 0;
+  score = 0;
+  endscreenEl.classList.add('hidden');
+  startscreenEl.classList.add('hidden');
+  gameEl.classList.remove('hidden');
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  nextBtn.classList.add('hidden');
+  const correct = roundQuestions[currentIndex];
+  statusEl.textContent = `Question ${currentIndex + 1} of ${TOTAL_QUESTIONS} · Score: ${score}`;
+  flagImg.src = flagUrl(correct.code);
+  flagImg.alt = correct.name + " flag";
+  speak("Please guess the flag and click on the correct button.");
+
+  const wrongPool = flags.filter(f => f.name !== correct.name);
+  const wrongs = shuffle(wrongPool).slice(0, 3);
+  const choices = shuffle([correct, ...wrongs]);
+
+  optionsEl.innerHTML = '';
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = choice.name;
+    btn.addEventListener('click', () => handleAnswer(btn, choice, correct));
+    optionsEl.appendChild(btn);
+  });
+}
+
+function handleAnswer(btn, choice, correct) {
+  if (answered) return;
+  answered = true;
+
+  const allBtns = Array.from(optionsEl.querySelectorAll('.opt'));
+  allBtns.forEach(b => b.disabled = true);
+
+  if (choice.name === correct.name) {
+    btn.classList.add('correct');
+    score++;
+    speak("Yay! That's correct!");
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => {
+      if (b.textContent === correct.name) b.classList.add('correct');
+    });
+    speak(`Oops, that's the flag of ${correct.name}.`);
+  }
+  allBtns.forEach(b => {
+    if (!b.classList.contains('correct') && !b.classList.contains('wrong')) {
+      b.classList.add('dim');
+    }
+  });
+
+  statusEl.textContent = `Question ${currentIndex + 1} of ${TOTAL_QUESTIONS} · Score: ${score}`;
+  nextBtn.classList.remove('hidden');
+}
+
+nextBtn.addEventListener('click', () => {
+  currentIndex++;
+  if (currentIndex >= TOTAL_QUESTIONS) {
+    showEndScreen();
+  } else {
+    showQuestion();
+  }
+});
+
+function showEndScreen() {
+  gameEl.classList.add('hidden');
+  endscreenEl.classList.remove('hidden');
+  finalScoreEl.textContent = `${score} / ${TOTAL_QUESTIONS}`;
+  endTitleEl.textContent = `All Done, ${PLAYER_NAME}!`;
+  let msg;
+  if (score === TOTAL_QUESTIONS) msg = `Wow, perfect score! ${PLAYER_NAME}, you're a flag superstar! 🌟`;
+  else if (score >= 7) msg = `Amazing job, ${PLAYER_NAME}! You really know your flags! 🎈`;
+  else if (score >= 4) msg = `Great effort, ${PLAYER_NAME}! Keep practicing and you'll be a flag master! 💪`;
+  else msg = `Nice try, ${PLAYER_NAME}! Let's play again and learn more flags! 🌈`;
+  encourageMsgEl.textContent = msg;
+  speak(msg);
+}
+
+startBtn.addEventListener('click', () => {
+  ensureAudioCtx();
+  startMusic();
+  startRound();
+});
+
+playAgainBtn.addEventListener('click', () => {
+  startMusic();
+  startRound();
+});
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
