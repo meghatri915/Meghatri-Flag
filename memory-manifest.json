@@ -1,8 +1,8 @@
 {
   "id": "/Meghatri-Flag/memory-match",
-  "name": "Meghatri & Papa's Memory Match",
+  "name": "Meghatri & Baba's Memory Match",
   "short_name": "Memory Match",
-  "description": "A family photo memory matching game for Meghatri and Papa!",
+  "description": "A family photo memory matching game for Meghatri and Baba!",
   "start_url": "./memory-match.html",
   "scope": "./",
   "display": "standalone",
