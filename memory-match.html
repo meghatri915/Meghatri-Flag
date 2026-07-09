@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff5da2">
+<title>Meghatri & Papa's Memory Match</title>
+<link rel="manifest" href="memory-manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Comic Sans MS', 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #ffe259, #ffa751, #ff6fa5, #6fc3ff);
+    background-size: 300% 300%;
+    animation: bgshift 12s ease infinite;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px;
+  }
+  @keyframes bgshift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .card-outer {
+    background: #fff;
+    border-radius: 32px;
+    box-shadow: 0 12px 0 rgba(0,0,0,0.15);
+    padding: 24px 20px 28px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+  }
+  h1 {
+    margin: 0 0 2px;
+    font-size: 1.7em;
+    color: #ff5da2;
+    text-shadow: 2px 2px 0 #ffd166;
+  }
+  .subtitle {
+    margin: 0 0 14px;
+    font-size: 1.02em;
+    color: #a25b00;
+    font-weight: bold;
+  }
+  .sound-toggles {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .sound-btn {
+    font-size: 1.2em;
+    background: #fff3cd;
+    border: none;
+    border-radius: 999px;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #d19a2c;
+  }
+  .sound-btn.off { opacity: 0.4; }
+
+  .status {
+    font-size: 1.05em;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 14px;
+    background: #fff3cd;
+    border-radius: 999px;
+    padding: 6px 14px;
+    display: inline-block;
+  }
+
+  /* ---- setup screen ---- */
+  .setup p { font-size: 1.05em; color: #555; margin: 0 0 16px; }
+  .photo-picker {
+    display: inline-block;
+    font-size: 1.1em;
+    font-weight: bold;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: #6fc3ff;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #3f9bdb;
+  }
+  .photo-picker input { display: none; }
+  .preview-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 18px 0;
+  }
+  .preview-strip img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 3px solid #ffd166;
+  }
+  .hint { font-size: 0.9em; color: #888; margin-top: -6px; margin-bottom: 16px; }
+  #startBtn, #playAgainBtn, #useDefaultBtn {
+    font-size: 1.15em;
+    font-weight: bold;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 999px;
+    background: #6bd490;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #3a9e5f;
+    margin: 6px;
+  }
+  #useDefaultBtn {
+    background: #ffd166;
+    color: #7a4b00;
+    box-shadow: 0 6px 0 #d19a2c;
+  }
+  #startBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #startBtn:active, #playAgainBtn:active, #useDefaultBtn:active { transform: translateY(4px); }
+
+  /* ---- game grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 0 auto 18px;
+    max-width: 440px;
+  }
+  .tile {
+    aspect-ratio: 1 / 1;
+    perspective: 800px;
+    cursor: pointer;
+  }
+  .tile-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s;
+    transform-style: preserve-3d;
+  }
+  .tile.flipped .tile-inner, .tile.matched .tile-inner {
+    transform: rotateY(180deg);
+  }
+  .tile-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .tile-back {
+    background: linear-gradient(135deg, #6fc3ff, #ff6fa5);
+    font-size: 1.8em;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+  .tile-front {
+    transform: rotateY(180deg);
+    background: #fff3cd;
+    border: 3px solid #ffd166;
+  }
+  .tile-front img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .tile.matched .tile-front {
+    border-color: #6bd490;
+    box-shadow: 0 0 0 3px #6bd490;
+  }
+
+  .hidden { display: none; }
+  .endscreen h2 {
+    font-size: 2em;
+    color: #ff5da2;
+    margin: 8px 0 6px;
+  }
+  .endscreen p { font-size: 1.15em; color: #555; }
+  .stars { font-size: 1.8em; }
+  a.back-link {
+    display: inline-block;
+    margin-top: 14px;
+    color: #a25b00;
+    font-weight: bold;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+<div class="card-outer">
+  <div class="sound-toggles">
+    <button class="sound-btn" id="musicToggle" title="Music on/off">🎵</button>
+    <button class="sound-btn" id="voiceToggle" title="Voice on/off">🔊</button>
+  </div>
+  <h1>🧠 Memory Match 🧠</h1>
+  <div class="subtitle">✨ Meghatri &amp; Papa's Family Edition ✨</div>
+
+  <div id="setup" class="setup">
+    <p>Pick 6 to 8 favorite family photos to play with!</p>
+    <label class="photo-picker">
+      📸 Choose Photos
+      <input type="file" id="photoInput" accept="image/*" multiple>
+    </label>
+    <div class="hint">You can also just play with fun icons instead.</div>
+    <div class="preview-strip" id="previewStrip"></div>
+    <div>
+      <button id="startBtn" disabled>Start Game ▶️</button>
+      <button id="useDefaultBtn">Use Fun Icons Instead 🎈</button>
+    </div>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="status" id="status">Moves: 0 · Pairs found: 0 / 0</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="endscreen" class="endscreen hidden">
+    <div class="stars">🌟🎉🌟</div>
+    <h2 id="endTitle">You found them all!</h2>
+    <p id="endStats"></p>
+    <p id="encourageMsg"></p>
+    <button id="playAgainBtn">Play Again 🔄</button>
+    <div><a class="back-link" id="newPhotosLink" href="#">📸 Pick new photos</a></div>
+  </div>
+</div>
+
+<script>
+const PLAYER_NAME = "Meghatri";
+const STORAGE_KEY = "meghatri-memory-photos";
+
+const DEFAULT_ICONS = ["🚩","🎈","🌈","🦋","🐬","🍦","🌻","🐢","🎨","🍀","⭐","🐧"];
+
+let selectedPhotos = [];
+let tiles = [];
+let flippedTiles = [];
+let matchedCount = 0;
+let moves = 0;
+let lockBoard = false;
+
+const setupEl = document.getElementById('setup');
+const gameEl = document.getElementById('game');
+const endscreenEl = document.getElementById('endscreen');
+const photoInput = document.getElementById('photoInput');
+const previewStrip = document.getElementById('previewStrip');
+const startBtn = document.getElementById('startBtn');
+const useDefaultBtn = document.getElementById('useDefaultBtn');
+const gridEl = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const endTitleEl = document.getElementById('endTitle');
+const endStatsEl = document.getElementById('endStats');
+const encourageMsgEl = document.getElementById('encourageMsg');
+const playAgainBtn = document.getElementById('playAgainBtn');
+const newPhotosLink = document.getElementById('newPhotosLink');
+const musicToggle = document.getElementById('musicToggle');
+const voiceToggle = document.getElementById('voiceToggle');
+
+/* ---------- Sound (same lightweight approach as the flag game) ---------- */
+let audioCtx = null;
+let musicOn = true;
+let voiceOn = true;
+let musicTimer = null;
+const MELODY = [523.25, 587.33, 659.25, 587.33, 523.25, 493.88, 440.00, 493.88];
+
+function ensureAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playTone(freq, startTime, duration, gainPeak) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(gainPeak, startTime + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+function scheduleMusicLoop() {
+  if (!musicOn || !audioCtx) return;
+  const noteDur = 0.55;
+  let t = audioCtx.currentTime + 0.05;
+  MELODY.forEach(freq => { playTone(freq, t, noteDur, 0.04); t += noteDur; });
+  musicTimer = setTimeout(scheduleMusicLoop, MELODY.length * noteDur * 1000);
+}
+function startMusic() {
+  ensureAudioCtx();
+  if (musicTimer) clearTimeout(musicTimer);
+  if (musicOn) scheduleMusicLoop();
+}
+function stopMusic() {
+  if (musicTimer) clearTimeout(musicTimer);
+  musicTimer = null;
+}
+function playChime(rising) {
+  if (!audioCtx) return;
+  const notes = rising ? [523.25, 659.25, 783.99] : [400, 320];
+  let t = audioCtx.currentTime;
+  notes.forEach(f => { playTone(f, t, 0.35, 0.08); t += 0.14; });
+}
+musicToggle.addEventListener('click', () => {
+  musicOn = !musicOn;
+  musicToggle.classList.toggle('off', !musicOn);
+  if (musicOn) startMusic(); else stopMusic();
+});
+function speak(text) {
+  if (!voiceOn || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.9;
+  utter.pitch = 1.2;
+  window.speechSynthesis.speak(utter);
+}
+voiceToggle.addEventListener('click', () => {
+  voiceOn = !voiceOn;
+  voiceToggle.classList.toggle('off', !voiceOn);
+  if (!voiceOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+});
+
+/* ---------- Photo picking ---------- */
+function fileToDataUrl(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+photoInput.addEventListener('change', async () => {
+  const files = Array.from(photoInput.files).slice(0, 8);
+  selectedPhotos = await Promise.all(files.map(fileToDataUrl));
+  renderPreview();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedPhotos)); } catch (e) {}
+});
+
+function renderPreview() {
+  previewStrip.innerHTML = '';
+  selectedPhotos.forEach(src => {
+    const img = document.createElement('img');
+    img.src = src;
+    previewStrip.appendChild(img);
+  });
+  startBtn.disabled = selectedPhotos.length < 4;
+}
+
+function loadSavedPhotos() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (Array.isArray(saved) && saved.length >= 4) {
+      selectedPhotos = saved;
+      renderPreview();
+    }
+  } catch (e) {}
+}
+loadSavedPhotos();
+
+useDefaultBtn.addEventListener('click', () => {
+  selectedPhotos = [];
+  beginGame(true);
+});
+
+startBtn.addEventListener('click', () => beginGame(false));
+
+newPhotosLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  endscreenEl.classList.add('hidden');
+  setupEl.classList.remove('hidden');
+});
+
+/* ---------- Game logic ---------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function beginGame(useIcons) {
+  ensureAudioCtx();
+  startMusic();
+
+  const pool = useIcons ? DEFAULT_ICONS.slice(0, 8) : selectedPhotos;
+  const pairCount = Math.min(8, Math.max(4, pool.length));
+  const chosen = shuffle(pool).slice(0, pairCount);
+
+  const deck = shuffle([...chosen, ...chosen]).map((value, i) => ({
+    id: i,
+    value,
+    isImage: !useIcons
+  }));
+
+  tiles = deck;
+  flippedTiles = [];
+  matchedCount = 0;
+  moves = 0;
+  lockBoard = false;
+
+  setupEl.classList.add('hidden');
+  endscreenEl.classList.add('hidden');
+  gameEl.classList.remove('hidden');
+
+  renderGrid();
+  updateStatus();
+  speak(`Let's play memory match, ${PLAYER_NAME}! Find the matching pairs!`);
+}
+
+function renderGrid() {
+  gridEl.innerHTML = '';
+  gridEl.style.gridTemplateColumns = tiles.length <= 12 ? 'repeat(4, 1fr)' : 'repeat(4, 1fr)';
+  tiles.forEach(tile => {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.dataset.id = tile.id;
+
+    const inner = document.createElement('div');
+    inner.className = 'tile-inner';
+
+    const back = document.createElement('div');
+    back.className = 'tile-face tile-back';
+    back.textContent = '❓';
+
+    const front = document.createElement('div');
+    front.className = 'tile-face tile-front';
+    if (tile.isImage) {
+      const img = document.createElement('img');
+      img.src = tile.value;
+      front.appendChild(img);
+    } else {
+      front.style.fontSize = '2.4em';
+      front.textContent = tile.value;
+    }
+
+    inner.appendChild(back);
+    inner.appendChild(front);
+    el.appendChild(inner);
+    el.addEventListener('click', () => handleTileClick(el, tile));
+    gridEl.appendChild(el);
+  });
+}
+
+function handleTileClick(el, tile) {
+  if (lockBoard) return;
+  if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
+  if (flippedTiles.length === 2) return;
+
+  el.classList.add('flipped');
+  flippedTiles.push({ el, tile });
+
+  if (flippedTiles.length === 2) {
+    moves++;
+    updateStatus();
+    const [a, b] = flippedTiles;
+    if (a.tile.value === b.tile.value) {
+      lockBoard = true;
+      setTimeout(() => {
+        a.el.classList.add('matched');
+        b.el.classList.add('matched');
+        matchedCount++;
+        flippedTiles = [];
+        lockBoard = false;
+        updateStatus();
+        playChime(true);
+        if (matchedCount === tiles.length / 2) {
+          setTimeout(showEndScreen, 500);
+        }
+      }, 400);
+    } else {
+      lockBoard = true;
+      playChime(false);
+      setTimeout(() => {
+        a.el.classList.remove('flipped');
+        b.el.classList.remove('flipped');
+        flippedTiles = [];
+        lockBoard = false;
+      }, 900);
+    }
+  }
+}
+
+function updateStatus() {
+  statusEl.textContent = `Moves: ${moves} · Pairs found: ${matchedCount} / ${tiles.length / 2}`;
+}
+
+function showEndScreen() {
+  gameEl.classList.add('hidden');
+  endscreenEl.classList.remove('hidden');
+  endTitleEl.textContent = `You found them all, ${PLAYER_NAME}!`;
+  endStatsEl.textContent = `It took you ${moves} moves.`;
+  let msg;
+  const pairCount = tiles.length / 2;
+  if (moves <= pairCount + 2) msg = `Incredible memory, ${PLAYER_NAME}! You're a memory champion! 🏆`;
+  else if (moves <= pairCount * 2) msg = `Great job, ${PLAYER_NAME}! Your memory is super strong! 💪`;
+  else msg = `Well done, ${PLAYER_NAME}! Let's play again and beat your score! 🌈`;
+  encourageMsgEl.textContent = msg;
+  speak(msg);
+}
+
+playAgainBtn.addEventListener('click', () => {
+  const useIcons = tiles.length > 0 && !tiles[0].isImage;
+  beginGame(useIcons);
+});
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
